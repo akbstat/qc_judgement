@@ -1,5 +1,5 @@
 use crate::compare::DataCompare;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use std::{fs, path::Path};
 
 const SECTD: &[u8] = r"\sectd".as_bytes();
@@ -37,10 +37,16 @@ pub struct QcJudge {
 impl QcJudge {
     pub fn new(path: &Path) -> Result<QcJudge> {
         let qc = fs::read(path)?;
-        let content_start = content_start_index(&qc).unwrap();
-        Ok(QcJudge {
-            contents: fetch_contents(&qc[content_start..]),
-        })
+        if let Some(content_start) = content_start_index(&qc) {
+            Ok(QcJudge {
+                contents: fetch_contents(&qc[content_start..]),
+            })
+        } else {
+            Err(anyhow!(format!(
+                "Error:{} is not a valid rtf file",
+                path.file_name().unwrap().to_str().unwrap()
+            )))
+        }
     }
     pub fn judge(&self) -> bool {
         let mut field = Field::None;
